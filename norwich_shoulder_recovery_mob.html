@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Norwich Shoulder Recovery</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d1117; --surface:#161b22; --surface2:#1e2530; --border:#30363d;
+  --accent:#4fc3f7; --accent2:#81c784; --accent3:#ffb74d; --warn:#ef5350;
+  --text:#e6edf3; --muted:#8b949e; --radius:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+.screen{display:none;min-height:100vh;}
+.screen.active{display:flex;}
+
+#screen-welcome{flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;
+  background:radial-gradient(ellipse 80% 60% at 50% 0%,#0a2540 0%,var(--bg) 70%);}
+.logo-badge{display:flex;align-items:center;gap:12px;margin-bottom:40px;}
+.logo-icon{width:52px;height:52px;background:linear-gradient(135deg,var(--accent),#0288d1);border-radius:14px;
+  display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 8px 28px rgba(79,195,247,0.3);}
+.logo-text{font-family:'DM Serif Display',serif;font-size:26px;}
+.logo-text span{color:var(--accent);}
+.welcome-title{font-family:'DM Serif Display',serif;font-size:clamp(28px,5vw,50px);text-align:center;line-height:1.2;margin-bottom:14px;}
+.welcome-title em{color:var(--accent);font-style:italic;}
+.welcome-sub{color:var(--muted);text-align:center;font-size:16px;max-width:460px;line-height:1.6;margin-bottom:40px;}
+.exercise-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;width:100%;max-width:700px;margin-bottom:36px;}
+.ex-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;}
+.ex-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--card-color,var(--accent));opacity:0;transition:opacity 0.2s;}
+.ex-card:hover{border-color:var(--card-color,var(--accent));transform:translateY(-2px);}
+.ex-card:hover::before,.ex-card.selected::before{opacity:1;}
+.ex-card.selected{border-color:var(--card-color,var(--accent));background:var(--surface2);}
+.ex-icon{font-size:28px;margin-bottom:8px;}
+.ex-name{font-weight:600;font-size:14px;margin-bottom:3px;}
+.ex-desc{font-size:12px;color:var(--muted);line-height:1.4;}
+.ex-target{font-size:12px;color:var(--card-color,var(--accent));margin-top:6px;font-weight:500;}
+
+.btn-primary{background:linear-gradient(135deg,var(--accent),#0288d1);color:#000;border:none;
+  padding:14px 44px;font-size:16px;font-weight:600;border-radius:100px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;transition:all 0.2s;box-shadow:0 4px 20px rgba(79,195,247,0.3);}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(79,195,247,0.45);}
+.btn-primary:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);
+  padding:10px 24px;font-size:14px;font-weight:500;border-radius:100px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;transition:all 0.2s;}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+
+#screen-setup{flex-direction:column;align-items:center;justify-content:center;padding:36px 24px;gap:20px;}
+.setup-title{font-family:'DM Serif Display',serif;font-size:26px;text-align:center;}
+.video-wrap{width:100%;max-width:540px;aspect-ratio:4/3;border-radius:var(--radius);
+  border:2px solid var(--border);overflow:hidden;position:relative;background:#000;}
+.video-wrap video,.video-wrap canvas{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;}
+.video-wrap video{transform:scaleX(-1);}
+.status-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 18px;border-radius:100px;
+  font-size:14px;font-weight:500;background:var(--surface2);border:1px solid var(--border);}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);transition:background 0.3s;}
+.dot.ready{background:var(--accent2);box-shadow:0 0 8px var(--accent2);}
+.dot.detecting{background:var(--accent3);animation:pulse 1s infinite;}
+.dot.error{background:var(--warn);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+.setup-hint{font-size:13px;color:var(--muted);text-align:center;max-width:420px;line-height:1.6;}
+
+/* Side selector */
+.side-selector{display:flex;gap:10px;margin-bottom:8px;}
+.side-btn{
+  flex:1;padding:12px 20px;border-radius:12px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;
+  border:2px solid var(--border);background:var(--surface);color:var(--muted);
+  transition:all 0.2s;text-align:center;
+}
+.side-btn:hover{border-color:var(--accent);color:var(--text);}
+.side-btn.selected-left{border-color:#4fc3f7;background:rgba(79,195,247,0.1);color:#4fc3f7;}
+.side-btn.selected-right{border-color:#ffb74d;background:rgba(255,183,77,0.1);color:#ffb74d;}
+.side-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--muted);margin-bottom:6px;text-align:center;}
+.position-card{
+  width:100%;max-width:540px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:16px 20px;
+}
+.position-card-title{
+  font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--accent);margin-bottom:12px;display:flex;align-items:center;gap:6px;
+}
+.position-steps{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+}
+.position-step{
+  display:flex;align-items:flex-start;gap:10px;
+  background:var(--surface2);border-radius:10px;padding:10px 12px;
+}
+.position-step-icon{font-size:18px;flex-shrink:0;margin-top:1px;}
+.position-step-text{font-size:12px;color:var(--muted);line-height:1.45;}
+.position-step-text strong{color:var(--text);display:block;margin-bottom:2px;font-size:13px;}
+.position-warning{
+  margin-top:10px;padding:8px 12px;
+  background:rgba(255,183,77,0.08);
+  border:1px solid rgba(255,183,77,0.25);
+  border-radius:8px;
+  font-size:12px;color:var(--accent3);line-height:1.5;
+}
+@media(max-width:500px){
+  .position-steps{grid-template-columns:1fr;}
+}
+
+#screen-exercise{flex-direction:column;height:100vh;overflow:hidden;}
+.ex-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;
+  border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;gap:12px;flex-wrap:wrap;}
+.ex-header-left{display:flex;align-items:center;gap:10px;}
+.ex-header-name{font-family:'DM Serif Display',serif;font-size:18px;}
+.phase-badge{padding:3px 12px;border-radius:100px;font-size:11px;font-weight:600;
+  background:rgba(79,195,247,0.15);color:var(--accent);border:1px solid rgba(79,195,247,0.3);}
+.rep-ctr{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);}
+.rep-ctr strong{font-size:20px;color:var(--text);font-family:'DM Serif Display',serif;}
+.ex-body{display:flex;flex:1;overflow:hidden;}
+.camera-panel{flex:1;position:relative;background:#000;overflow:hidden;}
+.camera-panel video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);}
+.camera-panel canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
+.debug-panel{position:absolute;bottom:10px;left:10px;background:rgba(0,0,0,0.75);
+  border-radius:8px;padding:8px 12px;font-size:11px;font-family:monospace;color:#aaa;z-index:20;line-height:1.6;max-width:90%;}
+.side-panel{width:300px;flex-shrink:0;background:var(--surface);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;overflow-y:auto;padding:16px;gap:16px;}
+.angle-disp{background:var(--surface2);border-radius:var(--radius);padding:18px;text-align:center;}
+.angle-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
+.angle-value{font-family:'DM Serif Display',serif;font-size:58px;line-height:1;color:var(--accent);transition:color .3s;}
+.angle-value.good{color:var(--accent2);}
+.angle-value.warn{color:var(--accent3);}
+.angle-unit{font-size:16px;color:var(--muted);}
+.arc-svg{display:block;margin:6px auto;}
+.max-display{font-size:12px;color:var(--muted);margin-top:4px;}
+.max-display strong{color:var(--accent);}
+.prog-wrap{background:var(--surface2);border-radius:var(--radius);padding:14px;}
+.prog-label{font-size:12px;color:var(--muted);margin-bottom:8px;display:flex;justify-content:space-between;}
+.prog-track{height:7px;background:var(--bg);border-radius:100px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .3s;}
+.feedback{background:var(--surface2);border-radius:var(--radius);padding:14px;border-left:3px solid var(--accent);transition:border-color .3s;}
+.feedback.good{border-color:var(--accent2);}
+.feedback.warn{border-color:var(--accent3);}
+.feedback-icon{font-size:18px;margin-bottom:4px;}
+.feedback-text{font-size:13px;line-height:1.5;}
+.phase-guide{background:var(--surface2);border-radius:var(--radius);padding:14px;}
+.pg-title{font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px;}
+.pg-steps{list-style:none;display:flex;flex-direction:column;gap:7px;}
+.pg-step{display:flex;gap:8px;font-size:12px;color:var(--muted);line-height:1.4;}
+.pg-step.active{color:var(--text);}
+.step-num{width:18px;height:18px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0;}
+.pg-step.active .step-num{background:var(--accent);color:#000;}
+
+#screen-results{flex-direction:column;align-items:center;padding:44px 24px;gap:28px;overflow-y:auto;}
+.results-hdr{text-align:center;}
+.results-title{font-family:'DM Serif Display',serif;font-size:38px;margin-bottom:6px;}
+.results-sub{color:var(--muted);font-size:15px;}
+.results-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;width:100%;max-width:680px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;text-align:center;}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
+.stat-val{font-family:'DM Serif Display',serif;font-size:36px;color:var(--accent);}
+.stat-unit{font-size:13px;color:var(--muted);}
+.chart-wrap{width:100%;max-width:680px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+.chart-title{font-weight:600;margin-bottom:14px;font-size:14px;}
+.ach-list{width:100%;max-width:680px;display:flex;flex-direction:column;gap:8px;}
+.ach{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;}
+.ach-icon{font-size:26px;}
+.ach-name{font-weight:600;font-size:14px;}
+.ach-desc{font-size:12px;color:var(--muted);margin-top:2px;}
+.results-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+
+/* ─────────── TABLET (≤900px) ─────────── */
+@media(max-width:900px){
+  .side-panel{width:260px;padding:12px;gap:12px;}
+  .angle-value{font-size:48px;}
+}
+
+/* ─────────── MOBILE (≤680px) ─────────── */
+@media(max-width:680px){
+  /* Allow the whole exercise screen to scroll on mobile so the side panel is reachable */
+  #screen-exercise{height:auto;min-height:100vh;overflow:visible;}
+  .ex-body{flex-direction:column;overflow:visible;}
+
+  /* Header: tighten spacing, allow wrap, shrink fonts */
+  .ex-header{padding:10px 12px;gap:8px;}
+  .ex-header-left{gap:8px;flex-wrap:wrap;}
+  .ex-header-name{font-size:16px;}
+  .phase-badge{font-size:10px;padding:3px 10px;}
+  .rep-ctr{font-size:12px;}
+  .rep-ctr strong{font-size:18px;}
+
+  /* Camera: use aspect ratio so it's tall enough to be useful but not full screen.
+     object-fit:contain ensures the user's full body stays in frame on portrait phones
+     (cover would crop the sides badly with a wide camera feed). */
+  .camera-panel{flex:none;width:100%;aspect-ratio:3/4;min-height:0;}
+  .camera-panel video,.camera-panel canvas{object-fit:contain;}
+  .debug-panel{font-size:10px;padding:5px 8px;bottom:6px;left:6px;line-height:1.4;max-width:calc(100% - 12px);}
+
+  /* Side panel becomes a normal-flow column below the camera */
+  .side-panel{width:100%;border-left:none;border-top:1px solid var(--border);
+    padding:12px;gap:12px;overflow:visible;}
+  .angle-disp{padding:14px;}
+  .angle-value{font-size:46px;}
+  .arc-svg{width:110px;height:64px;}
+  .feedback,.phase-guide,.prog-wrap{padding:12px;}
+
+  /* Welcome screen: less padding, tighter cards */
+  #screen-welcome{padding:28px 16px;}
+  .logo-badge{margin-bottom:28px;}
+  .logo-icon{width:44px;height:44px;font-size:22px;border-radius:12px;}
+  .logo-text{font-size:22px;}
+  .welcome-title{margin-bottom:12px;}
+  .welcome-sub{font-size:14px;margin-bottom:28px;}
+  .exercise-cards{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:24px;}
+  .ex-card{padding:14px;}
+  .ex-icon{font-size:24px;margin-bottom:6px;}
+  .ex-name{font-size:13px;}
+  .ex-desc{font-size:11px;}
+  .ex-target{font-size:11px;}
+  .side-selector{flex-direction:column;gap:8px;}
+  .side-btn{padding:14px 16px;font-size:14px;}
+  .btn-primary{padding:14px 28px;font-size:15px;width:100%;max-width:340px;}
+
+  /* Setup screen */
+  #screen-setup{padding:20px 16px;gap:16px;}
+  .setup-title{font-size:21px;line-height:1.3;}
+  .video-wrap{aspect-ratio:3/4;}
+  .position-card{padding:14px;}
+  .position-card-title{font-size:11px;margin-bottom:10px;}
+  .position-step{padding:10px;}
+  .position-step-text{font-size:12px;}
+  .setup-hint{font-size:12px;}
+
+  /* Results screen */
+  #screen-results{padding:28px 16px;gap:20px;}
+  .results-title{font-size:30px;}
+  .results-sub{font-size:14px;}
+  .results-grid{grid-template-columns:repeat(2,1fr);gap:10px;}
+  .stat-card{padding:14px;}
+  .stat-val{font-size:28px;}
+  .chart-wrap{padding:14px;}
+  .ach{padding:12px 14px;gap:12px;}
+  .ach-icon{font-size:22px;}
+  .results-actions{width:100%;}
+  .results-actions .btn-primary,.results-actions .btn-secondary{flex:1;min-width:140px;padding:13px 18px;}
+}
+
+/* ─────────── SMALL MOBILE (≤380px) ─────────── */
+@media(max-width:380px){
+  .exercise-cards{grid-template-columns:1fr;}
+  .results-grid{grid-template-columns:1fr;}
+  .welcome-title{font-size:24px;}
+  .ex-header-name{font-size:14px;}
+}
+
+/* ─────────── LANDSCAPE PHONE ─────────── */
+@media(max-width:900px) and (orientation:landscape) and (max-height:500px){
+  #screen-exercise{height:auto;min-height:100vh;}
+  .ex-body{flex-direction:row;}
+  .camera-panel{aspect-ratio:auto;height:calc(100vh - 60px);min-height:0;}
+  .side-panel{width:240px;height:calc(100vh - 60px);overflow-y:auto;
+    border-left:1px solid var(--border);border-top:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- WELCOME -->
+<div id="screen-welcome" class="screen active">
+  <div class="logo-badge">
+    <div class="logo-icon">🦾</div>
+    <div class="logo-text">Norwich <span>Shoulder Recovery</span></div>
+  </div>
+  <h1 class="welcome-title">Your road to<br><em>full recovery</em> starts here</h1>
+  <p class="welcome-sub">AI-guided shoulder rehabilitation following total shoulder replacement. Real-time pose tracking measures your range of motion on every rep.</p>
+
+  <div style="width:100%;max-width:700px;margin-bottom:20px;">
+    <div class="side-label">Which shoulder was replaced?</div>
+    <div class="side-selector">
+      <div class="side-btn" id="btn-left" onclick="selectSide('left')">🦾 Left Shoulder</div>
+      <div class="side-btn" id="btn-right" onclick="selectSide('right')">🦾 Right Shoulder</div>
+    </div>
+  </div>
+  <div class="exercise-cards">
+    <div class="ex-card" style="--card-color:#4fc3f7" onclick="selectEx('flexion',this)">
+      <div class="ex-icon">⬆️</div>
+      <div class="ex-name">Forward Flexion</div>
+      <div class="ex-desc">Raise arm forward and up</div>
+      <div class="ex-target">Target: 0° → 150°</div>
+    </div>
+    <div class="ex-card" style="--card-color:#81c784" onclick="selectEx('abduction',this)">
+      <div class="ex-icon">↔️</div>
+      <div class="ex-name">Abduction</div>
+      <div class="ex-desc">Raise arm out to the side</div>
+      <div class="ex-target">Target: 0° → 140°</div>
+    </div>
+    <div class="ex-card" style="--card-color:#ffb74d" onclick="selectEx('external',this)">
+      <div class="ex-icon">🔄</div>
+      <div class="ex-name">External Rotation</div>
+      <div class="ex-desc">Rotate forearm outward</div>
+      <div class="ex-target">Target: 0° → 60°</div>
+    </div>
+    <div class="ex-card" style="--card-color:#f48fb1" onclick="selectEx('pendulum',this)">
+      <div class="ex-icon">🔁</div>
+      <div class="ex-name">Pendulum</div>
+      <div class="ex-desc">Gentle warm-up circles</div>
+      <div class="ex-target">Warm-up / cool-down</div>
+    </div>
+  </div>
+  <button class="btn-primary" id="btn-start" onclick="goSetup()" disabled>Select an exercise to begin</button>
+  <p style="margin-top:14px;font-size:12px;color:var(--muted);">⚠️ Follow your surgeon's guidance. Stop if you feel sharp pain.</p>
+</div>
+
+<!-- SETUP -->
+<div id="screen-setup" class="screen">
+  <button class="btn-secondary" style="align-self:flex-start" onclick="goWelcome()">← Back</button>
+  <h2 class="setup-title" id="setup-title">Position yourself in frame</h2>
+  <div class="video-wrap">
+    <video id="setup-video" autoplay playsinline muted></video>
+    <canvas id="setup-canvas"></canvas>
+  </div>
+  <div class="status-pill"><div class="dot detecting" id="setup-dot"></div><span id="setup-status">Initialising…</span></div>
+
+  <!-- Dynamic positioning card — content injected by JS per exercise -->
+  <div class="position-card" id="position-card"></div>
+
+  <button class="btn-primary" id="btn-begin" onclick="goExercise()" disabled>Begin Exercise</button>
+</div>
+
+<!-- EXERCISE -->
+<div id="screen-exercise" class="screen">
+  <div class="ex-header">
+    <div class="ex-header-left">
+      <button class="btn-secondary" style="padding:7px 14px;font-size:12px" onclick="endSession()">✕ End</button>
+      <span class="ex-header-name" id="ex-name-hdr">Exercise</span>
+      <span class="phase-badge" id="phase-badge">Ready</span>
+    </div>
+    <div class="rep-ctr">Reps: <strong id="rep-count">0</strong><span style="color:var(--muted)">/</span><span id="rep-goal" style="color:var(--muted)">10</span></div>
+  </div>
+  <div class="ex-body">
+    <div class="camera-panel">
+      <video id="ex-video" autoplay playsinline muted></video>
+      <canvas id="ex-canvas"></canvas>
+      <div class="debug-panel" id="debug-panel">Initialising pose model…</div>
+    </div>
+    <div class="side-panel">
+      <div class="angle-disp">
+        <div class="angle-label">Current Angle</div>
+        <div class="angle-value" id="live-angle">--<span class="angle-unit">°</span></div>
+        <svg class="arc-svg" width="130" height="75" viewBox="0 0 130 75">
+          <path d="M5,70 A60,60 0 0,1 125,70" fill="none" stroke="#30363d" stroke-width="6" stroke-linecap="round"/>
+          <path id="arc-fill" d="M5,70 A60,60 0 0,1 125,70" fill="none" stroke="#4fc3f7" stroke-width="6"
+            stroke-linecap="round" stroke-dasharray="188" stroke-dashoffset="188"/>
+        </svg>
+        <div class="max-display">Session max: <strong id="max-disp">0°</strong></div>
+      </div>
+      <div class="prog-wrap">
+        <div class="prog-label"><span>Progress</span><span id="prog-pct">0%</span></div>
+        <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+      </div>
+      <div class="feedback" id="feedback">
+        <div class="feedback-icon" id="fb-icon">💡</div>
+        <div class="feedback-text" id="fb-text">Get into position and raise your operative arm when ready.</div>
+      </div>
+      <div class="phase-guide">
+        <div class="pg-title">Exercise Steps</div>
+        <ul class="pg-steps" id="pg-steps">
+          <li class="pg-step active"><div class="step-num">1</div><div id="step0">Neutral — arm at side</div></li>
+          <li class="pg-step"><div class="step-num">2</div><div id="step1">Raise arm slowly</div></li>
+          <li class="pg-step"><div class="step-num">3</div><div id="step2">Hold 2 sec at peak</div></li>
+          <li class="pg-step"><div class="step-num">4</div><div id="step3">Lower down slowly</div></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="screen-results" class="screen">
+  <div class="results-hdr">
+    <div style="font-size:44px;margin-bottom:10px">🏆</div>
+    <h2 class="results-title">Session Complete!</h2>
+    <p class="results-sub" id="res-sub">Great work on your recovery</p>
+  </div>
+  <div class="results-grid" id="res-grid"></div>
+  <div class="chart-wrap">
+    <div class="chart-title">Peak Angle Per Rep</div>
+    <canvas id="rep-chart" height="200"></canvas>
+  </div>
+  <div class="ach-list" id="ach-list"></div>
+  <div class="results-actions">
+    <button class="btn-primary" onclick="repeatEx()">🔁 Repeat</button>
+    <button class="btn-secondary" onclick="goWelcome()">🏠 New Exercise</button>
+  </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+
+<script type="module">
+import { PoseLandmarker, FilesetResolver, DrawingUtils }
+  from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+
+// ── EXERCISE DEFINITIONS ──────────────────
+const EXERCISES = {
+  flexion:  { name:'Forward Flexion',  target:150, repGoal:10,
+    steps:['Arm relaxed at side','Raise arm forward & up','Hold at peak — 2s','Lower slowly'],
+    upThresh:25, downThresh:12, goodAngle:90, measure:'trunk' },
+  abduction:{ name:'Abduction',        target:140, repGoal:10,
+    steps:['Arm at side','Raise arm out to side','Hold at peak — 2s','Lower slowly'],
+    upThresh:25, downThresh:12, goodAngle:80, measure:'trunk' },
+  external: { name:'External Rotation',target:60,  repGoal:10,
+    steps:['Elbow bent 90°','Rotate forearm outward','Hold at max — 2s','Return to neutral'],
+    upThresh:10, downThresh:5,  goodAngle:30, measure:'external' },
+  pendulum: { name:'Pendulum',         target:45,  repGoal:20,
+    steps:['Lean forward, support self','Let arm hang freely','Clockwise circles ×10','Counter-clockwise ×10'],
+    upThresh:10, downThresh:5,  goodAngle:20, measure:'trunk' },
+};
+
+// ── APP STATE ─────────────────────────────
+let selectedKey = null;
+let operativeSide = null;   // 'left' | 'right'
+let poseLandmarker = null;
+let stream = null;
+let rafId = null;
+let lastTime = -1;
+
+let reps=0, maxAngle=0, currentAngle=0;
+let repAngles=[], repPhase='down';
+let holdStart=0, sessionStart=0, peakThisRep=0;
+
+// Landmark indices per side
+// left:  shoulder=11, elbow=13, wrist=15, hip=23, oppShoulder=12
+// right: shoulder=12, elbow=14, wrist=16, hip=24, oppShoulder=11
+function getLmkIdx(side) {
+  return side==='left'
+    ? { sh:11, el:13, wr:15, hi:23, opp:12 }
+    : { sh:12, el:14, wr:16, hi:24, opp:11 };
+}
+
+// ── LOAD MODEL ────────────────────────────
+async function loadModel() {
+  const vision = await FilesetResolver.forVisionTasks(
+    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+  );
+  return await PoseLandmarker.createFromOptions(vision, {
+    baseOptions: {
+      modelAssetPath:"https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+      delegate:"GPU"
+    },
+    runningMode:"VIDEO",
+    numPoses:1,
+    minPoseDetectionConfidence:0.5,
+    minPosePresenceConfidence:0.5,
+    minTrackingConfidence:0.5
+  });
+}
+const modelPromise = loadModel();
+
+// ── SCREENS ───────────────────────────────
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── SIDE SELECTION ────────────────────────
+window.selectSide = (side) => {
+  operativeSide = side;
+  document.getElementById('btn-left').className  = 'side-btn' + (side==='left'  ? ' selected-left'  : '');
+  document.getElementById('btn-right').className = 'side-btn' + (side==='right' ? ' selected-right' : '');
+  updateStartBtn();
+};
+
+function updateStartBtn() {
+  const btn = document.getElementById('btn-start');
+  if (selectedKey && operativeSide) {
+    btn.disabled = false;
+    btn.textContent = `Start ${EXERCISES[selectedKey].name} →`;
+  } else if (!operativeSide) {
+    btn.disabled = true;
+    btn.textContent = 'Select which shoulder was replaced';
+  } else {
+    btn.disabled = true;
+    btn.textContent = 'Select an exercise to begin';
+  }
+}
+
+// ── WELCOME ───────────────────────────────
+window.selectEx = (key, el) => {
+  selectedKey = key;
+  document.querySelectorAll('.ex-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  updateStartBtn();
+};
+
+window.goSetup = async () => {
+  if (!selectedKey || !operativeSide) return;
+  // Inject positioning instructions — update side-specific language for ER
+  document.getElementById('position-card').innerHTML = buildPositionCard(selectedKey, operativeSide);
+  document.getElementById('setup-title').textContent =
+    selectedKey === 'external'
+      ? `Stand side-on — ${operativeSide} shoulder toward camera`
+      : 'Position yourself in frame';
+  show('screen-setup');
+  await startSetupCamera();
+};
+const POSITION_GUIDE = {
+  flexion: {
+    title: 'How to position for Forward Flexion',
+    steps: [
+      { icon:'📏', head:'Distance', body:'Stand <strong>2–3 metres</strong> from the camera' },
+      { icon:'🧍', head:'Orientation', body:'Face the camera <strong>directly</strong>' },
+      { icon:'💡', head:'Lighting', body:'Make sure your <strong>full torso</strong> is well lit' },
+      { icon:'🦾', head:'Start position', body:'Operative arm <strong>relaxed at your side</strong>' },
+    ],
+    warning: null,
+  },
+  abduction: {
+    title: 'How to position for Abduction',
+    steps: [
+      { icon:'📏', head:'Distance', body:'Stand <strong>2–3 metres</strong> from the camera' },
+      { icon:'🧍', head:'Orientation', body:'Face the camera <strong>directly</strong>' },
+      { icon:'💡', head:'Lighting', body:'Make sure your <strong>full torso and both arms</strong> are visible' },
+      { icon:'🦾', head:'Start position', body:'Operative arm <strong>relaxed at your side</strong>, palm facing in' },
+    ],
+    warning: null,
+  },
+  pendulum: {
+    title: 'How to position for Pendulum',
+    steps: [
+      { icon:'🪑', head:'Support', body:'Use a chair or table to <strong>support your non-operative arm</strong>' },
+      { icon:'📏', head:'Distance', body:'Camera should see your <strong>full upper body</strong> while leaning forward' },
+      { icon:'🔽', head:'Lean forward', body:'Bend at the waist so your <strong>operative arm hangs freely</strong> downward' },
+      { icon:'🔄', head:'The movement', body:'Let gravity do the work — make <strong>small, gentle circles</strong>' },
+    ],
+    warning: '⚠️ This is a gentle warm-up exercise. Never force the movement — let the arm swing naturally under gravity only.',
+  },
+};
+
+function buildERPositionGuide(side) {
+  const rotateDir = side==='left' ? 'outward to the left (toward the camera)' : 'outward to the right (toward the camera)';
+  return {
+    title: `External Rotation — ${side.charAt(0).toUpperCase()+side.slice(1)} Shoulder`,
+    steps: [
+      { icon:'↩️', head:'Stand side-on', body:`Turn 90° so your <strong>${side} (operative) shoulder faces the camera</strong> — your body should be side-on, not facing forward` },
+      { icon:'📏', head:'Distance', body:'Stand <strong>1.5–2 metres</strong> from the camera so your elbow and wrist are clearly visible' },
+      { icon:'🪑', head:'Seated or standing', body:'You may sit or stand — keep your <strong>trunk upright and still</strong> throughout' },
+      { icon:'💪', head:'Elbow at 90°', body:'Bend your operative elbow to <strong>90°</strong> and keep it <strong>tucked firmly against your side</strong> — a rolled towel between elbow and trunk helps' },
+      { icon:'🤚', head:'Neutral (0°)', body:'Forearm points <strong>straight forward, parallel to the floor</strong> — this matches the goniometer\'s stationary arm position' },
+      { icon:'🔄', head:'The movement', body:`Rotate your forearm <strong>${rotateDir}</strong>, keeping the elbow fixed against your side` },
+      { icon:'👁️', head:'Keep wrist visible', body:'Your <strong>wrist must stay in frame</strong> at all times — the angle reads 0° if the wrist landmark is lost' },
+    ],
+    warning:'⚠️ Keep your elbow against your side for the whole movement. If the elbow lifts or your trunk rotates, the measurement will be inaccurate — this matches how a clinical goniometer is applied.',
+  };
+}
+
+function buildPositionCard(key, side) {
+  const g = key==='external' ? buildERPositionGuide(side||'left') : POSITION_GUIDE[key];
+  const stepsHTML = g.steps.map(s => `
+    <div class="position-step">
+      <div class="position-step-icon">${s.icon}</div>
+      <div class="position-step-text"><strong>${s.head}</strong> — ${s.body}</div>
+    </div>`).join('');
+  const warningHTML = g.warning ? `<div class="position-warning">${g.warning}</div>` : '';
+  return `
+    <div class="position-card-title">📋 ${g.title}</div>
+    <div class="position-steps">${stepsHTML}</div>
+    ${warningHTML}`;
+}
+
+
+// ── WELCOME (duplicate — remove below) ───
+
+window.goWelcome = () => { stopLoop(); show('screen-welcome'); };
+
+// ── SETUP CAMERA ──────────────────────────
+async function startSetupCamera() {
+  const video=document.getElementById('setup-video');
+  const canvas=document.getElementById('setup-canvas');
+  const dot=document.getElementById('setup-dot');
+  const statusEl=document.getElementById('setup-status');
+  const btn=document.getElementById('btn-begin');
+
+  setDot('detecting','Starting camera…');
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}, audio:false
+    });
+    video.srcObject = stream;
+    await video.play();
+    setDot('detecting','Loading AI model…');
+    poseLandmarker = await modelPromise;
+    setDot('detecting','Looking for your pose…');
+    lastTime = -1;
+
+    function loop() {
+      if (!document.getElementById('screen-setup').classList.contains('active')) return;
+      if (video.currentTime !== lastTime && video.readyState >= 2) {
+        lastTime = video.currentTime;
+        const r = poseLandmarker.detectForVideo(video, performance.now());
+        drawSetupCanvas(canvas, video, r);
+        const lmks = r.landmarks?.[0];
+        if (lmks && lmks[11]?.visibility>0.5 && lmks[12]?.visibility>0.5) {
+          // For ER (side-on), also require operative wrist to be visible
+          const wrIdx = getLmkIdx(operativeSide||'left').wr;
+          if (selectedKey==='external' && (!lmks[wrIdx]||lmks[wrIdx].visibility<0.3)) {
+            setDot('detecting','Raise your forearm so the wrist is visible');
+            btn.disabled=true;
+          } else {
+            setDot('ready','✓ Pose detected — ready!');
+            btn.disabled=false;
+          }
+        } else if (lmks) {
+          setDot('detecting','Move back — show full torso');
+          btn.disabled=true;
+        } else {
+          setDot('detecting','No pose — check lighting & distance');
+          btn.disabled=true;
+        }
+      }
+      rafId = requestAnimationFrame(loop);
+    }
+    rafId = requestAnimationFrame(loop);
+  } catch(e) {
+    setDot('error','Camera error: '+e.message);
+    console.error(e);
+  }
+
+  function setDot(cls, txt) {
+    dot.className='dot '+cls;
+    statusEl.textContent=txt;
+  }
+}
+
+function drawSetupCanvas(canvas, video, results) {
+  canvas.width=video.videoWidth||640;
+  canvas.height=video.videoHeight||480;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.save(); ctx.scale(-1,1); ctx.translate(-canvas.width,0);
+  if (results.landmarks?.[0]) {
+    const du=new DrawingUtils(ctx);
+    du.drawConnectors(results.landmarks[0], PoseLandmarker.POSE_CONNECTIONS,{color:'rgba(79,195,247,0.6)',lineWidth:2});
+    du.drawLandmarks(results.landmarks[0],{color:'rgba(79,195,247,0.85)',lineWidth:1,radius:4});
+  }
+  ctx.restore();
+}
+
+// ── BEGIN EXERCISE ────────────────────────
+window.goExercise = () => {
+  stopLoop();
+  const ex=EXERCISES[selectedKey];
+  reps=0; maxAngle=0; currentAngle=0;
+  repAngles=[]; repPhase='down'; holdStart=0;
+  peakThisRep=0; sessionStart=Date.now(); lastTime=-1;
+
+  document.getElementById('ex-name-hdr').textContent=ex.name;
+  document.getElementById('rep-goal').textContent=ex.repGoal;
+  document.getElementById('rep-count').textContent='0';
+  document.getElementById('max-disp').textContent='0°';
+  document.getElementById('prog-fill').style.width='0%';
+  document.getElementById('prog-pct').textContent='0%';
+  document.getElementById('phase-badge').textContent='Ready';
+  ex.steps.forEach((s,i)=>{const e=document.getElementById('step'+i);if(e)e.textContent=s;});
+  setPhaseStep(0);
+  // Exercise-specific opening feedback
+  const openingFeedback = {
+    flexion:   [  'info','💡','Arm at your side. Slowly raise it forward when ready.'],
+    abduction: [  'info','💡','Arm at your side. Slowly raise it out to the side when ready.'],
+    external:  ['info','↩️',`${(operativeSide||'left').charAt(0).toUpperCase()+(operativeSide||'left').slice(1)} shoulder toward camera. Elbow bent 90°, tucked to side. Forearm pointing forward. Rotate outward when ready.`],
+    pendulum:  [  'info','💡','Lean forward, let your arm hang freely. Begin gentle circles when ready.'],
+  };
+  const [fbType, fbIcon, fbText] = openingFeedback[selectedKey] || ['info','💡','Get into position when ready.'];
+  setFeedback(fbType, fbIcon, fbText);
+  document.getElementById('debug-panel').textContent='Starting…';
+
+  show('screen-exercise');
+  startExLoop();
+};
+
+async function startExLoop() {
+  const video=document.getElementById('ex-video');
+  const dbg=document.getElementById('debug-panel');
+
+  if (!stream) {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}, audio:false
+      });
+    } catch(e) { dbg.textContent='Camera error: '+e.message; return; }
+  }
+  video.srcObject=stream;
+  await video.play();
+
+  if (!poseLandmarker) {
+    dbg.textContent='Loading model…';
+    poseLandmarker = await modelPromise;
+  }
+  dbg.textContent='Model ready — detecting pose…';
+
+  function loop() {
+    if (!document.getElementById('screen-exercise').classList.contains('active')) return;
+    if (video.currentTime !== lastTime && video.readyState >= 2) {
+      lastTime = video.currentTime;
+      let results;
+      try { results = poseLandmarker.detectForVideo(video, performance.now()); }
+      catch(e) { dbg.textContent='Error: '+e.message; rafId=requestAnimationFrame(loop); return; }
+
+      const lmks = results.landmarks?.[0];
+      const worldLmks = results.worldLandmarks?.[0];
+      drawExCanvas(document.getElementById('ex-canvas'), video, results, lmks);
+
+      if (lmks) {
+        const angle = calcAngle(lmks, worldLmks, EXERCISES[selectedKey].measure);
+        currentAngle=angle;
+        if (angle>peakThisRep) peakThisRep=angle;
+        if (angle>maxAngle) maxAngle=angle;
+
+        // Wrist visibility warning specific to external rotation
+        if (selectedKey==='external') {
+          const wrIdx = getLmkIdx(operativeSide||'left').wr;
+          const wr=lmks[wrIdx];
+          if (!wr || wr.visibility < 0.3) {
+            setFeedback('warn','👁️','Wrist not visible — bring your forearm back into frame');
+          }
+        }
+
+        if (selectedKey==='external' && window._erDebug) {
+          const d=window._erDebug;
+          dbg.innerHTML =
+            `<b style="color:#4fc3f7">ER [${d.method}]</b> | <b style="color:#81c784">result: ${d.result}°</b> | erDeg: ${d.erDeg}° | wrist_vis: ${d.wr_vis}<br>`+
+            `latComp: <b>${d.latComp??d.lateralComp}</b> | fwdComp: <b>${d.fwdComp??'-'}</b> | phase: ${repPhase}<br>`+
+            (d.method==='WORLD'
+              ? `fa_world: x=${d.fa_x} y=${d.fa_y} z=${d.fa_z} | xAxis.x=${d.xAxis_x} zAxis.z=${d.zAxis_z}`
+              : `fa2D: x=${d.faX} y=${d.faY}`);
+        } else {
+          dbg.textContent=`✓ Pose detected | angle: ${angle}° | phase: ${repPhase} | L-shoulder: ${lmks[11]?.visibility?.toFixed(2)}`;
+        }
+        updateAngleUI(angle);
+        processRep(angle);
+      } else {
+        dbg.textContent='⚠ No pose — move back, check lighting';
+      }
+    }
+    rafId=requestAnimationFrame(loop);
+  }
+  rafId=requestAnimationFrame(loop);
+}
+
+// ── DRAW EXERCISE CANVAS ──────────────────
+function drawExCanvas(canvas, video, results, lmks) {
+  canvas.width=video.videoWidth||640;
+  canvas.height=video.videoHeight||480;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.save(); ctx.scale(-1,1); ctx.translate(-canvas.width,0);
+  const W=canvas.width, H=canvas.height;
+
+  if (lmks) {
+    const du=new DrawingUtils(ctx);
+    du.drawConnectors(lmks, PoseLandmarker.POSE_CONNECTIONS,{color:'rgba(79,195,247,0.3)',lineWidth:2});
+
+    // Highlight operative arm (left = indices 11,13,15)
+    ctx.strokeStyle='rgba(129,199,132,0.9)'; ctx.lineWidth=4;
+    [[11,13],[13,15]].forEach(([a,b])=>{
+      if(lmks[a]?.visibility>0.3&&lmks[b]?.visibility>0.3){
+        ctx.beginPath();
+        ctx.moveTo(lmks[a].x*W,lmks[a].y*H);
+        ctx.lineTo(lmks[b].x*W,lmks[b].y*H);
+        ctx.stroke();
+      }
+    });
+
+    // Shoulder dot
+    if(lmks[11]?.visibility>0.3){
+      ctx.beginPath(); ctx.arc(lmks[11].x*W,lmks[11].y*H,9,0,Math.PI*2);
+      ctx.fillStyle='#81c784'; ctx.fill();
+    }
+
+    du.drawLandmarks(lmks,{color:'rgba(79,195,247,0.7)',lineWidth:1,radius:3});
+
+    // Angle arc at shoulder
+    const sh=lmks[11], el=lmks[13], hi=lmks[23];
+    if(sh?.visibility>0.3&&el?.visibility>0.3&&hi?.visibility>0.3){
+      const sx=sh.x*W, sy=sh.y*H;
+      const a1=Math.atan2(hi.y*H-sy, hi.x*W-sx);
+      const a2=Math.atan2(el.y*H-sy, el.x*W-sx);
+      ctx.beginPath(); ctx.arc(sx,sy,36,a1,a2,false);
+      ctx.strokeStyle='rgba(255,183,77,0.85)'; ctx.lineWidth=2.5; ctx.stroke();
+      ctx.fillStyle='#fff'; ctx.font='bold 13px DM Sans,sans-serif';
+      ctx.fillText(currentAngle+'°', sx+40, sy-6);
+    }
+  }
+  ctx.restore();
+}
+
+// ── 3D VECTOR HELPERS ─────────────────────
+function vec3(a,b)    { return {x:b.x-a.x, y:b.y-a.y, z:b.z-a.z}; }
+function dot3(u,v)    { return u.x*v.x + u.y*v.y + u.z*v.z; }
+function mag3(u)      { return Math.sqrt(u.x**2 + u.y**2 + u.z**2); }
+function cross3(u,v)  { return {x:u.y*v.z-u.z*v.y, y:u.z*v.x-u.x*v.z, z:u.x*v.y-u.y*v.x}; }
+function norm3(u)     { const m=mag3(u)+1e-9; return {x:u.x/m,y:u.y/m,z:u.z/m}; }
+function angleDeg3(u,v) {
+  const c=dot3(u,v)/(mag3(u)*mag3(v)+1e-9);
+  return Math.acos(Math.max(-1,Math.min(1,c)))*180/Math.PI;
+}
+function project3(v, ontoNorm) {
+  // Remove component of v along ontoNorm (project onto plane perpendicular to ontoNorm)
+  const d = dot3(v, ontoNorm);
+  return {x:v.x-d*ontoNorm.x, y:v.y-d*ontoNorm.y, z:v.z-d*ontoNorm.z};
+}
+
+// ── ANGLE CALCULATION ─────────────────────
+function calcAngle(lmks, wlmks, measure) {
+  const idx = getLmkIdx(operativeSide || 'left');
+  const sh=lmks[idx.sh], el=lmks[idx.el], hi=lmks[idx.hi], wr=lmks[idx.wr];
+  const opp=lmks[idx.opp];
+  if(!sh||!el||!hi) return 0;
+  if(sh.visibility<0.3||el.visibility<0.3) return 0;
+
+  if (measure==='trunk') {
+    return Math.min(Math.round(angleDeg3(vec3(sh,hi), vec3(sh,el))), 180);
+  }
+
+  if (measure==='external') {
+    // ════════════════════════════════════════════════════════════════
+    // CLINICAL GONIOMETER METHOD — matches NIH/standard physiotherapy
+    //
+    // Setup: Patient seated/standing, elbow at 90°, tucked to side.
+    //   Stationary arm: parallel to the floor (horizontal reference)
+    //   Moving arm:     parallel to the forearm (elbow→wrist)
+    //   Axis:           olecranon process (elbow)
+    //
+    // In world landmark space (metric, hip-centred):
+    //   The "horizontal reference" = the global horizontal plane
+    //   The "forearm" = elbow→wrist vector
+    //   ER = angle between forearm and horizontal, measured in the
+    //        transverse (horizontal) plane
+    //
+    // Algorithm:
+    //   1. Take the forearm vector from world landmarks
+    //   2. Project onto the horizontal plane (zero out the Y component)
+    //      → this is equivalent to placing the goniometer stationary
+    //        arm on the horizontal and reading where the forearm points
+    //   3. Determine the forward reference (patient's anterior direction)
+    //      from the body frame — this is the 0° (neutral) direction
+    //   4. ER = atan2(lateral component, forward component)
+    //      Sign: for operative side, ER = wrist swinging AWAY from midline
+    //            toward the camera (positive lateral direction)
+    //
+    // Patient is side-on: operative shoulder toward camera.
+    //   At neutral:  forearm horizontal, pointing forward (+Z world)
+    //   At full ER:  forearm horizontal, pointing toward camera
+    //                (lateral direction = +X for left, -X for right)
+    // ════════════════════════════════════════════════════════════════
+    if(!wr||wr.visibility<0.3) return 0;
+
+    if (wlmks && wlmks.length > 15) {
+      const wsh=wlmks[idx.sh], wel=wlmks[idx.el], whi=wlmks[idx.hi];
+      const wwr=wlmks[idx.wr], wopp=wlmks[idx.opp];
+      if (!wsh||!wel||!whi||!wwr) return calcAngleER2D(lmks, idx);
+
+      // ── Body frame (world space) ──────────────────────────────────
+      // Superior axis
+      const yAxis = norm3(vec3(whi, wsh));
+
+      // Lateral axis: opp-shoulder → operative-shoulder
+      // For left arm:  right-shoulder(12) → left-shoulder(11)  = points LEFT  (+X)
+      // For right arm: left-shoulder(11)  → right-shoulder(12) = points RIGHT (-X)
+      const xAxis = wopp ? norm3(vec3(wopp, wsh)) : {x: operativeSide==='left'?1:-1, y:0, z:0};
+
+      // Anterior axis (body forward direction)
+      const zAxis = norm3(cross3(xAxis, yAxis));
+
+      // ── Forearm vector ────────────────────────────────────────────
+      const fa = vec3(wel, wwr);
+
+      // ── Step 1: Project forearm onto horizontal plane ─────────────
+      // "Horizontal" in world coords = zero out the global Y component
+      // (equivalent to goniometer stationary arm lying flat on a table)
+      const faHoriz = { x: fa.x, y: 0, z: fa.z };
+      if (mag3(faHoriz) < 1e-4) return calcAngleER2D(lmks, idx);
+
+      // ── Step 2: Horizontal reference for 0° ──────────────────────
+      // The goniometer stationary arm is parallel to the floor AND
+      // pointing in the patient's forward direction.
+      // Project the body's anterior axis (zAxis) onto horizontal plane:
+      const fwdRef = norm3({ x: zAxis.x, y: 0, z: zAxis.z });
+
+      // ── Step 3: ER = atan2(lateral, forward) in horizontal plane ─
+      const latComp = dot3(faHoriz, xAxis);   // +ve = ER (wrist swings lateral)
+      const fwdComp = dot3(faHoriz, fwdRef);  // +ve = neutral (wrist points forward)
+
+      const erDeg = Math.atan2(latComp, fwdComp) * 180 / Math.PI;
+      const result = Math.min(Math.max(Math.round(erDeg), 0), 90);
+
+      window._erDebug = {
+        method: 'WORLD-clinical',
+        side: operativeSide,
+        fa_x: fa.x.toFixed(3), fa_y: fa.y.toFixed(3), fa_z: fa.z.toFixed(3),
+        faH_x: faHoriz.x.toFixed(3), faH_z: faHoriz.z.toFixed(3),
+        fwdRef_x: fwdRef.x.toFixed(3), fwdRef_z: fwdRef.z.toFixed(3),
+        xAxis_x: xAxis.x.toFixed(3), zAxis_z: zAxis.z.toFixed(3),
+        latComp: latComp.toFixed(3), fwdComp: fwdComp.toFixed(3),
+        erDeg: Math.round(erDeg), result,
+        wr_vis: wr.visibility?.toFixed(2),
+      };
+      return result;
+    }
+
+    return calcAngleER2D(lmks, idx);
+  }
+  return 0;
+}
+
+function calcAngleER2D(lmks, idx) {
+  // 2D fallback — side-on position, ER arc lies in the image plane
+  const sh=lmks[idx.sh], el=lmks[idx.el], hi=lmks[idx.hi], wr=lmks[idx.wr];
+  if(!wr||wr.visibility<0.3) return 0;
+
+  // Body forward = perpendicular to spine in image plane
+  const spX=sh.x-hi.x, spY=sh.y-hi.y;
+  const spLen=Math.sqrt(spX**2+spY**2)+1e-9;
+  // For left arm side-on (left shoulder toward camera): forward = rotate spine CW
+  // For right arm side-on (right shoulder toward camera): forward = rotate spine CCW
+  const sign = operativeSide==='left' ? 1 : -1;
+  const fwdX= sign*(spY/spLen), fwdY= sign*(-spX/spLen);
+
+  const faX=wr.x-el.x, faY=wr.y-el.y;
+  const latX=-fwdY, latY=fwdX;
+
+  const latComp = faX*latX + faY*latY;
+  const fwdComp = faX*fwdX + faY*fwdY;
+  const erDeg   = Math.atan2(latComp, fwdComp)*180/Math.PI;
+  const result  = Math.min(Math.max(Math.round(erDeg),0),90);
+
+  window._erDebug = {
+    method:'2D-fallback', side: operativeSide,
+    faX:faX.toFixed(3), faY:faY.toFixed(3),
+    latComp:latComp.toFixed(3), fwdComp:fwdComp.toFixed(3),
+    erDeg:Math.round(erDeg), result,
+    wr_vis:wr?.visibility?.toFixed(2),
+  };
+  return result;
+}
+
+// ── REP STATE MACHINE ─────────────────────
+function processRep(angle) {
+  const ex=EXERCISES[selectedKey];
+  const now=Date.now();
+
+  if (repPhase==='down') {
+    if (angle>=ex.upThresh) {
+      repPhase='up'; peakThisRep=angle;
+      setPhaseStep(1); badge('Raising');
+      setFeedback('info','⬆️','Keep raising — go as far as comfortable!');
+    } else {
+      setFeedback('info','💡','Lift your arm to begin the rep.');
+      setPhaseStep(0);
+    }
+  } else if (repPhase==='up') {
+    if (angle>peakThisRep) peakThisRep=angle;
+    if (angle>=ex.goodAngle) {
+      repPhase='hold'; holdStart=now;
+      setPhaseStep(2); badge('Hold!');
+      setFeedback('good','✅',`Great! Hold here — ${angle}°`);
+    } else if (angle<ex.downThresh) {
+      repPhase='down';
+      setFeedback('warn','⚠️','Try to go higher before coming down.');
+      setPhaseStep(0); badge('Ready');
+    } else {
+      setFeedback('info','⬆️',`${angle}° — keep raising! (${Math.round(angle/ex.target*100)}% of target)`);
+    }
+  } else if (repPhase==='hold') {
+    if (angle>peakThisRep) peakThisRep=angle;
+    const held=(now-holdStart)/1000;
+    if (held>=2) {
+      repPhase='lower'; setPhaseStep(3); badge('Lowering');
+      setFeedback('good','🎯','Perfect! Now lower your arm slowly.');
+    } else {
+      setFeedback('good','⏱️',`Hold… ${(2-held).toFixed(1)}s remaining — ${angle}°`);
+    }
+  } else if (repPhase==='lower') {
+    if (angle<=ex.downThresh+8) {
+      reps++;
+      repAngles.push(peakThisRep);
+      peakThisRep=0; repPhase='down';
+      badge('Ready'); updateRepCount(); setPhaseStep(0);
+      const pct=Math.round(repAngles[repAngles.length-1]/ex.target*100);
+      const msg=pct>=90?`🏆 Rep ${reps}! ${pct}% of target — outstanding!`
+               :pct>=70?`✅ Rep ${reps} done — ${pct}% of target!`
+               :`👍 Rep ${reps} complete — keep working on range.`;
+      setFeedback('good','✅',msg);
+      if(reps>=ex.repGoal) setTimeout(window.endSession,1200);
+    } else {
+      setFeedback('info','⬇️',`Lower arm slowly — controlled return. ${angle}°`);
+    }
+  }
+}
+
+// ── UI HELPERS ────────────────────────────
+function updateAngleUI(angle) {
+  const ex=EXERCISES[selectedKey];
+  const el=document.getElementById('live-angle');
+  el.innerHTML=`${angle}<span class="angle-unit">°</span>`;
+  el.className='angle-value'+(angle>=ex.goodAngle?' good':angle>=ex.upThresh?' warn':'');
+  document.getElementById('max-disp').textContent=maxAngle+'°';
+  const pct=Math.min(angle/ex.target,1);
+  document.getElementById('arc-fill').style.strokeDashoffset=188-(pct*188);
+  document.getElementById('arc-fill').style.stroke=`hsl(${Math.round(pct*120)},75%,60%)`;
+}
+
+function updateRepCount() {
+  const ex=EXERCISES[selectedKey];
+  document.getElementById('rep-count').textContent=reps;
+  const pct=Math.round(reps/ex.repGoal*100);
+  document.getElementById('prog-pct').textContent=pct+'%';
+  document.getElementById('prog-fill').style.width=pct+'%';
+}
+
+function setFeedback(type,icon,text){
+  document.getElementById('feedback').className='feedback'+(type==='good'?' good':type==='warn'?' warn':'');
+  document.getElementById('fb-icon').textContent=icon;
+  document.getElementById('fb-text').textContent=text;
+}
+
+function setPhaseStep(idx){
+  document.querySelectorAll('.pg-step').forEach((el,i)=>{
+    el.className='pg-step'+(i===idx?' active':'');
+  });
+}
+
+function badge(txt) { document.getElementById('phase-badge').textContent=txt; }
+
+// ── END SESSION ───────────────────────────
+window.endSession = () => {
+  stopLoop();
+  const ex=EXERCISES[selectedKey];
+  const duration=Math.round((Date.now()-sessionStart)/1000);
+  const peak=repAngles.length?Math.max(...repAngles):maxAngle;
+  const avg=repAngles.length?Math.round(repAngles.reduce((a,b)=>a+b,0)/repAngles.length):maxAngle;
+  const pctTgt=Math.round(peak/ex.target*100);
+
+  show('screen-results');
+  document.getElementById('res-sub').textContent=`${ex.name} · ${reps} reps`;
+
+  document.getElementById('res-grid').innerHTML=[
+    ['Reps',reps,`/ ${ex.repGoal}`],['Peak Angle',peak,'°'],
+    ['Avg Angle',avg,'°'],['% of Target',pctTgt,'%'],
+    ['Duration',duration<60?duration:Math.round(duration/60),duration<60?'s':'min']
+  ].map(([l,v,u])=>`<div class="stat-card"><div class="stat-label">${l}</div>
+    <div class="stat-val">${v}<span class="stat-unit"> ${u}</span></div></div>`).join('');
+
+  setTimeout(()=>{
+    const ctx2=document.getElementById('rep-chart').getContext('2d');
+    if(window._chart) window._chart.destroy();
+    window._chart=new Chart(ctx2,{
+      type:'bar',
+      data:{
+        labels:repAngles.map((_,i)=>`Rep ${i+1}`),
+        datasets:[
+          {label:'Peak °',data:repAngles,borderRadius:5,
+           backgroundColor:repAngles.map(a=>a/ex.target>=0.8?'rgba(129,199,132,0.8)':a/ex.target>=0.5?'rgba(255,183,77,0.8)':'rgba(239,83,80,0.6)')},
+          {label:'Target',data:repAngles.map(()=>ex.target),type:'line',
+           borderColor:'rgba(79,195,247,0.5)',borderDash:[5,4],pointRadius:0,fill:false}
+        ]
+      },
+      options:{responsive:true,
+        plugins:{legend:{labels:{color:'#8b949e',font:{family:'DM Sans'}}}},
+        scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#21262d'}},
+                y:{ticks:{color:'#8b949e'},grid:{color:'#21262d'},suggestedMax:ex.target+10}}}
+    });
+  },100);
+
+  const earned=[];
+  if(reps>=ex.repGoal) earned.push({icon:'🏆',name:'Full Set Complete',desc:`All ${ex.repGoal} reps done`});
+  if(pctTgt>=90) earned.push({icon:'🌟',name:'Excellent ROM',desc:`${pctTgt}% of target reached`});
+  else if(pctTgt>=70) earned.push({icon:'✅',name:'Good Range',desc:`${pctTgt}% of target`});
+  if(repAngles.length>2&&Math.max(...repAngles)-Math.min(...repAngles)<20) earned.push({icon:'💪',name:'Consistent Form',desc:'Steady angles throughout'});
+  if(!earned.length) earned.push({icon:'🌱',name:'Session Logged',desc:'Every session builds recovery momentum'});
+
+  document.getElementById('ach-list').innerHTML=earned.map(a=>
+    `<div class="ach"><div class="ach-icon">${a.icon}</div>
+    <div><div class="ach-name">${a.name}</div><div class="ach-desc">${a.desc}</div></div></div>`
+  ).join('');
+};
+
+window.repeatEx = () => window.goExercise();
+
+function stopLoop() { if(rafId){cancelAnimationFrame(rafId);rafId=null;} }
+
+</script>
+</body>
+</html>
