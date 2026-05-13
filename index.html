@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Norwich Shoulder Recovery</title>
+<title>MVP Shoulder Recovery</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -47,12 +47,28 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   font-family:'DM Sans',sans-serif;transition:all 0.2s;}
 .btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
 
+/* Camera flip button (floats over the video) */
+.cam-flip{position:absolute;top:10px;right:10px;z-index:30;
+  width:42px;height:42px;border-radius:50%;border:1px solid var(--border);
+  background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);
+  color:var(--text);font-size:18px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all 0.2s;}
+.cam-flip:hover{background:rgba(0,0,0,0.75);border-color:var(--accent);color:var(--accent);}
+.cam-flip:disabled{opacity:0.4;cursor:not-allowed;}
+.cam-label{position:absolute;top:14px;left:10px;z-index:30;
+  padding:5px 12px;border-radius:100px;font-size:11px;font-weight:500;
+  background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);
+  color:var(--text);border:1px solid var(--border);
+  display:flex;align-items:center;gap:5px;}
+.cam-label .dot-sm{width:6px;height:6px;border-radius:50%;background:var(--accent2);}
+
 #screen-setup{flex-direction:column;align-items:center;justify-content:center;padding:36px 24px;gap:20px;}
 .setup-title{font-family:'DM Serif Display',serif;font-size:26px;text-align:center;}
 .video-wrap{width:100%;max-width:540px;aspect-ratio:4/3;border-radius:var(--radius);
   border:2px solid var(--border);overflow:hidden;position:relative;background:#000;}
 .video-wrap video,.video-wrap canvas{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;}
-.video-wrap video{transform:scaleX(-1);}
+.video-wrap.mirror video,.video-wrap.mirror canvas{transform:scaleX(-1);}
 .status-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 18px;border-radius:100px;
   font-size:14px;font-weight:500;background:var(--surface2);border:1px solid var(--border);}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);transition:background 0.3s;}
@@ -118,8 +134,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .rep-ctr strong{font-size:20px;color:var(--text);font-family:'DM Serif Display',serif;}
 .ex-body{display:flex;flex:1;overflow:hidden;}
 .camera-panel{flex:1;position:relative;background:#000;overflow:hidden;}
-.camera-panel video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);}
+.camera-panel video{width:100%;height:100%;object-fit:cover;}
 .camera-panel canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
+.camera-panel.mirror video,.camera-panel.mirror canvas{transform:scaleX(-1);}
 .debug-panel{position:absolute;bottom:10px;left:10px;background:rgba(0,0,0,0.75);
   border-radius:8px;padding:8px 12px;font-size:11px;font-family:monospace;color:#aaa;z-index:20;line-height:1.6;max-width:90%;}
 .side-panel{width:300px;flex-shrink:0;background:var(--surface);border-left:1px solid var(--border);
@@ -268,7 +285,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <div id="screen-welcome" class="screen active">
   <div class="logo-badge">
     <div class="logo-icon">🦾</div>
-    <div class="logo-text">Norwich <span>Shoulder Recovery</span></div>
+    <div class="logo-text">MVP <span>Shoulder Recovery</span></div>
   </div>
   <h1 class="welcome-title">Your road to<br><em>full recovery</em> starts here</h1>
   <p class="welcome-sub">AI-guided shoulder rehabilitation following total shoulder replacement. Real-time pose tracking measures your range of motion on every rep.</p>
@@ -314,9 +331,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <div id="screen-setup" class="screen">
   <button class="btn-secondary" style="align-self:flex-start" onclick="goWelcome()">← Back</button>
   <h2 class="setup-title" id="setup-title">Position yourself in frame</h2>
-  <div class="video-wrap">
+  <div class="video-wrap mirror" id="setup-wrap">
     <video id="setup-video" autoplay playsinline muted></video>
     <canvas id="setup-canvas"></canvas>
+    <div class="cam-label" id="setup-cam-label"><div class="dot-sm"></div>Front</div>
+    <button class="cam-flip" id="btn-flip-setup" onclick="flipCamera()" title="Switch camera" aria-label="Switch camera">⇆</button>
   </div>
   <div class="status-pill"><div class="dot detecting" id="setup-dot"></div><span id="setup-status">Initialising…</span></div>
 
@@ -337,9 +356,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="rep-ctr">Reps: <strong id="rep-count">0</strong><span style="color:var(--muted)">/</span><span id="rep-goal" style="color:var(--muted)">10</span></div>
   </div>
   <div class="ex-body">
-    <div class="camera-panel">
+    <div class="camera-panel mirror" id="ex-camera-panel">
       <video id="ex-video" autoplay playsinline muted></video>
       <canvas id="ex-canvas"></canvas>
+      <div class="cam-label" id="ex-cam-label"><div class="dot-sm"></div>Front</div>
+      <button class="cam-flip" id="btn-flip-ex" onclick="flipCamera()" title="Switch camera" aria-label="Switch camera">⇆</button>
       <div class="debug-panel" id="debug-panel">Initialising pose model…</div>
     </div>
     <div class="side-panel">
@@ -419,6 +440,7 @@ const EXERCISES = {
 // ── APP STATE ─────────────────────────────
 let selectedKey = null;
 let operativeSide = null;   // 'left' | 'right'
+let cameraFacing = 'user';  // 'user' = front (mirrored), 'environment' = back (not mirrored)
 let poseLandmarker = null;
 let stream = null;
 let rafId = null;
@@ -504,16 +526,7 @@ window.goSetup = async () => {
   await startSetupCamera();
 };
 const POSITION_GUIDE = {
-  flexion: {
-    title: 'How to position for Forward Flexion',
-    steps: [
-      { icon:'📏', head:'Distance', body:'Stand <strong>2–3 metres</strong> from the camera' },
-      { icon:'🧍', head:'Orientation', body:'Face the camera <strong>directly</strong>' },
-      { icon:'💡', head:'Lighting', body:'Make sure your <strong>full torso</strong> is well lit' },
-      { icon:'🦾', head:'Start position', body:'Operative arm <strong>relaxed at your side</strong>' },
-    ],
-    warning: null,
-  },
+  flexion: null,  // built dynamically per side — see buildFlexionPositionGuide
   abduction: {
     title: 'How to position for Abduction',
     steps: [
@@ -553,8 +566,27 @@ function buildERPositionGuide(side) {
   };
 }
 
+function buildFlexionPositionGuide(side) {
+  const sideLabel = side.charAt(0).toUpperCase()+side.slice(1);
+  return {
+    title: `Forward Flexion — ${sideLabel} Shoulder`,
+    steps: [
+      { icon:'↩️', head:'Stand side-on', body:`Turn 90° so the <strong>lateral (outside) aspect of your ${side} shoulder faces the camera</strong> — your body should be in profile, not facing forward` },
+      { icon:'📏', head:'Distance', body:'Stand <strong>2–3 metres</strong> from the camera so your <strong>full arm and torso</strong> are visible from shoulder to hip' },
+      { icon:'🧍', head:'Posture', body:'Stand <strong>tall and still</strong> — keep your trunk upright; avoid leaning back as the arm rises' },
+      { icon:'🦾', head:'Start position', body:'Operative arm <strong>relaxed at your side</strong>, palm facing inward (toward your thigh)' },
+      { icon:'⬆️', head:'The movement', body:'Raise your arm <strong>straight forward and up</strong> in the sagittal plane — like reaching toward something in front of you, not out to the side' },
+      { icon:'👁️', head:'Keep arm in frame', body:'Your <strong>elbow and wrist must stay visible</strong> throughout — the camera should capture the full arc' },
+    ],
+    warning: '⚠️ Do not let the trunk arch backward to "cheat" extra range. The measurement is most accurate when the spine stays still and only the shoulder moves.',
+  };
+}
+
 function buildPositionCard(key, side) {
-  const g = key==='external' ? buildERPositionGuide(side||'left') : POSITION_GUIDE[key];
+  let g;
+  if (key==='external')      g = buildERPositionGuide(side||'left');
+  else if (key==='flexion')  g = buildFlexionPositionGuide(side||'left');
+  else                       g = POSITION_GUIDE[key];
   const stepsHTML = g.steps.map(s => `
     <div class="position-step">
       <div class="position-step-icon">${s.icon}</div>
@@ -572,6 +604,60 @@ function buildPositionCard(key, side) {
 
 window.goWelcome = () => { stopLoop(); show('screen-welcome'); };
 
+// ── CAMERA FLIP ───────────────────────────
+window.flipCamera = async () => {
+  const btnSetup = document.getElementById('btn-flip-setup');
+  const btnEx    = document.getElementById('btn-flip-ex');
+  // Lock the buttons during the swap so a double-tap doesn't race
+  if (btnSetup) btnSetup.disabled = true;
+  if (btnEx)    btnEx.disabled = true;
+
+  // Swap state
+  cameraFacing = (cameraFacing === 'user') ? 'environment' : 'user';
+  const isFront = cameraFacing === 'user';
+
+  // Update mirror classes + labels on both screens (so coming back works too)
+  document.getElementById('setup-wrap').classList.toggle('mirror', isFront);
+  document.getElementById('ex-camera-panel').classList.toggle('mirror', isFront);
+  const labelText = isFront ? 'Front' : 'Back';
+  document.getElementById('setup-cam-label').innerHTML = `<div class="dot-sm"></div>${labelText}`;
+  document.getElementById('ex-cam-label').innerHTML    = `<div class="dot-sm"></div>${labelText}`;
+
+  // Stop existing stream and animation loop
+  stopLoop();
+  if (stream) {
+    stream.getTracks().forEach(t => t.stop());
+    stream = null;
+  }
+  lastTime = -1;
+
+  // Restart the camera for whichever screen is active. Wrapped in try/catch
+  // because on devices with only one camera, requesting 'environment' fails —
+  // in that case fall back to whatever's available.
+  try {
+    const setupActive = document.getElementById('screen-setup').classList.contains('active');
+    const exActive    = document.getElementById('screen-exercise').classList.contains('active');
+    if (setupActive) {
+      await startSetupCamera();
+    } else if (exActive) {
+      await startExLoop();
+    }
+  } catch (e) {
+    console.error('Camera flip failed:', e);
+    // Revert state if the new camera isn't available
+    cameraFacing = (cameraFacing === 'user') ? 'environment' : 'user';
+    document.getElementById('setup-wrap').classList.toggle('mirror', cameraFacing==='user');
+    document.getElementById('ex-camera-panel').classList.toggle('mirror', cameraFacing==='user');
+    const revertLabel = cameraFacing==='user' ? 'Front' : 'Back';
+    document.getElementById('setup-cam-label').innerHTML = `<div class="dot-sm"></div>${revertLabel}`;
+    document.getElementById('ex-cam-label').innerHTML    = `<div class="dot-sm"></div>${revertLabel}`;
+    alert('Could not switch camera — your device may only have one available.');
+  } finally {
+    if (btnSetup) btnSetup.disabled = false;
+    if (btnEx)    btnEx.disabled = false;
+  }
+};
+
 // ── SETUP CAMERA ──────────────────────────
 async function startSetupCamera() {
   const video=document.getElementById('setup-video');
@@ -583,7 +669,7 @@ async function startSetupCamera() {
   setDot('detecting','Starting camera…');
   try {
     stream = await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}, audio:false
+      video:{facingMode:cameraFacing,width:{ideal:640,max:960},height:{ideal:480,max:720},frameRate:{ideal:24,max:30}}, audio:false
     });
     video.srcObject = stream;
     await video.play();
@@ -636,7 +722,7 @@ function drawSetupCanvas(canvas, video, results) {
   canvas.height=video.videoHeight||480;
   const ctx=canvas.getContext('2d');
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.save(); ctx.scale(-1,1); ctx.translate(-canvas.width,0);
+  ctx.save();
   if (results.landmarks?.[0]) {
     const du=new DrawingUtils(ctx);
     du.drawConnectors(results.landmarks[0], PoseLandmarker.POSE_CONNECTIONS,{color:'rgba(79,195,247,0.6)',lineWidth:2});
@@ -664,7 +750,7 @@ window.goExercise = () => {
   setPhaseStep(0);
   // Exercise-specific opening feedback
   const openingFeedback = {
-    flexion:   [  'info','💡','Arm at your side. Slowly raise it forward when ready.'],
+    flexion:   [  'info','↩️',`${(operativeSide||'left').charAt(0).toUpperCase()+(operativeSide||'left').slice(1)} shoulder toward camera (side-on). Arm relaxed at side. Slowly raise it forward and up when ready.`],
     abduction: [  'info','💡','Arm at your side. Slowly raise it out to the side when ready.'],
     external:  ['info','↩️',`${(operativeSide||'left').charAt(0).toUpperCase()+(operativeSide||'left').slice(1)} shoulder toward camera. Elbow bent 90°, tucked to side. Forearm pointing forward. Rotate outward when ready.`],
     pendulum:  [  'info','💡','Lean forward, let your arm hang freely. Begin gentle circles when ready.'],
@@ -684,7 +770,7 @@ async function startExLoop() {
   if (!stream) {
     try {
       stream = await navigator.mediaDevices.getUserMedia({
-        video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}, audio:false
+        video:{facingMode:cameraFacing,width:{ideal:640,max:960},height:{ideal:480,max:720},frameRate:{ideal:24,max:30}}, audio:false
       });
     } catch(e) { dbg.textContent='Camera error: '+e.message; return; }
   }
@@ -752,7 +838,7 @@ function drawExCanvas(canvas, video, results, lmks) {
   canvas.height=video.videoHeight||480;
   const ctx=canvas.getContext('2d');
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.save(); ctx.scale(-1,1); ctx.translate(-canvas.width,0);
+  ctx.save();
   const W=canvas.width, H=canvas.height;
 
   if (lmks) {
